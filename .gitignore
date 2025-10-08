@@ -3,3 +3,21 @@ __pycache__/
 *.pyc
 .env
 slack_bot.log
+
+# RAG System - ChromaDB (contains indexed documents)
+chroma_db/
+
+# RAG System - Uploaded documents (may contain sensitive data)
+documents/*.pdf
+documents/*.txt
+documents/*.csv
+documents/*.md
+!documents/README.md
+
+# Temporary files
+*.tmp
+*.temp
+
+# IDE files
+.vscode/
+.idea/

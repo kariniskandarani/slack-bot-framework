@@ -4,6 +4,29 @@ slack_bolt
 ngrok
 python-dotenv
 
+# RAG Core Dependencies
+chromadb==0.4.15
+sentence-transformers==2.2.2
+google-generativeai==0.3.0
+
+# Document Processing
+pypdf2==3.0.1
+pandas==2.0.3
+tiktoken==0.5.1
+
+# HTTP Requests for APIs
+requests==2.31.0
+tenacity==8.2.0
+
+# Text Processing
+numpy==1.24.3
+scikit-learn==1.3.0
+requests==2.31.0
+pypdf2==3.0.1
+pandas==2.0.3
+tiktoken==0.5.1
+tenacity==8.2.0
+
 # Testing dependencies
 pytest
 pytest-asyncio
