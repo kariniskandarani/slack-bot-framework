@@ -60,6 +60,8 @@ Before starting, ensure you have:
    |-------|-------------|------------|
    | `app_mentions:read` | View messages that directly mention @your_bot | **CRITICAL**: Without this, your bot won't receive mention events |
    | `chat:write` | Send messages as RAGDemoBot | **CRITICAL**: Without this, your bot can't respond to users |
+   | `im:history` | View messages in direct messages | **REQUIRED**: For direct message functionality |
+   | `im:read` | View basic information about direct messages | **REQUIRED**: For direct message functionality |
 
 5. **Optional but recommended scopes**:
 
@@ -125,21 +127,43 @@ Before starting, ensure you have:
 
 1. **Scroll down** to "Subscribe to bot events" section
 2. **Click**: "Add Bot User Event"
-3. **Add this event**: `app_mention`
+3. **Add these events**:
+   - `app_mention` (for channel mentions)
+   - `message.im` (for direct messages)
 
-**Why this matters**: Your code has this event listener:
+**Why this matters**: Your code has these event listeners:
 
 ```python
-@slack_app.event("app_mention")  # ← This matches the event subscription
+@slack_app.event("app_mention")  # ← This matches the app_mention subscription
 def handle_app_mention(event, say, logger):
-    # Your bot's response logic
+    # Your bot's response to mentions
+
+@slack_app.event("message")      # ← This matches the message.im subscription
+def handle_direct_message(event, say, logger):
+    # Your bot's response to direct messages
 ```
 
 **Click**: "Save Changes"
 
 ---
 
-## 🎯 Part 5: Code-to-Config Mapping
+## 💬 Part 5: Enable Direct Messages
+
+### Step 8: Configure App Home for Direct Messages
+
+🚨 **IMPORTANT**: This step is required for direct messaging to work!
+
+1. **Navigate to**: "App Home" (left sidebar)
+2. **Scroll down** to "Show Tabs" section
+3. **Enable Messages Tab**:
+   - ✅ Check "Allow users to send Slash commands and messages from the messages tab"
+4. **Click**: "Save Changes"
+
+⚠️ **Without this step**: Users will see "Sending messages to this app has been turned off" when trying to DM your bot.
+
+---
+
+## 🎯 Part 6: Code-to-Config Mapping
 
 ### Understanding the Connection
 
@@ -148,15 +172,17 @@ Your **code** and **Slack configuration** must match:
 | Code Component | Slack Configuration | Purpose |
 |----------------|-------------------|---------|
 | `@slack_app.event("app_mention")` | Event Subscriptions → `app_mention` | Bot receives mention events |
+| `@slack_app.event("message")` | Event Subscriptions → `message.im` | Bot receives direct messages |
 | `say()` function | OAuth Scopes → `chat:write` | Bot can send messages |
-| `event["user"]` | OAuth Scopes → `app_mentions:read` | Bot can read mention details |
+| `event["user"]` | OAuth Scopes → `app_mentions:read` + `im:history` | Bot can read mention and DM details |
 | `/slack/events` endpoint | Request URL | Where Slack sends events |
+| Messages Tab | App Home → "Allow users to send messages" | Enables direct messaging |
 
 ---
 
-## 📋 Part 6: Environment Variables Setup
+## 📋 Part 7: Environment Variables Setup
 
-### Step 8: Update Your .env File
+### Step 9: Update Your .env File
 
 Create or update your `.env` file with the tokens from Slack:
 
@@ -176,9 +202,9 @@ signing_secret=your-signing-secret-goes-here
 
 ---
 
-## 🧪 Part 7: Testing Your Setup
+## 🧪 Part 8: Testing Your Setup
 
-### Step 9: Test the Configuration
+### Step 10: Test the Configuration
 
 #### Test 1: Invite Bot to Channel
 
@@ -191,17 +217,24 @@ signing_secret=your-signing-secret-goes-here
 1. **In the channel, type**: `@RAGDemoBot hello`
 2. **Expected response**: `Hi @yourname! How can I help you?`
 
-#### Test 3: Check Logs
+#### Test 3: Test Direct Messages
+
+1. **Click on your bot** in the "Apps" section or "Direct messages"
+2. **Send a message**: `Hello bot!`
+3. **Expected response**: `Hi @yourname, you sent me a DM: "Hello bot!"`
+
+#### Test 4: Check Logs
 
 Monitor your application logs for:
 
 ```text
 2025-09-27 23:43:15,234 - app - INFO - Responded to app mention from user U12345
+2025-10-09 00:15:30,456 - app - INFO - Received DM from user U12345: Hello bot!
 ```
 
 ---
 
-## 🔍 Part 8: Troubleshooting Guide
+## 🔍 Part 9: Troubleshooting Guide
 
 ### Common Issues and Solutions
 
@@ -227,6 +260,17 @@ Monitor your application logs for:
 5. ✅ **Code running**: Is your FastAPI app running?
 6. ✅ **ngrok running**: Is ngrok tunnel active?
 
+#### ❌ **Bot Doesn't Respond to Direct Messages**
+
+**Problem**: Shows "Sending messages to this app has been turned off"
+**Solutions**:
+
+1. ✅ **App Home**: Go to App Home → Enable "Allow users to send messages from the messages tab"
+2. ✅ **Event subscription**: Add `message.im` event
+3. ✅ **OAuth scopes**: Add `im:history` and `im:read` scopes
+4. ✅ **Reinstall**: Reinstall bot to workspace after changes
+5. ✅ **Code check**: Ensure you have `@slack_app.event("message")` handler
+
 #### ❌ **Permission Errors**
 
 **Problem**: Bot responds with permission errors
@@ -247,7 +291,7 @@ Monitor your application logs for:
 
 ---
 
-## 📝 Part 9: Verification Checklist
+## 📝 Part 10: Verification Checklist
 
 Before going live, verify:
 
@@ -255,12 +299,13 @@ Before going live, verify:
 
 - [ ] App created with name "RAGDemoBot"
 - [ ] Signing secret copied to `.env` file
-- [ ] OAuth scopes: `app_mentions:read` + `chat:write` added
+- [ ] OAuth scopes: `app_mentions:read`, `chat:write`, `im:history`, `im:read` added
 - [ ] Bot token copied to `.env` file (starts with `xoxb-`)
 - [ ] App installed to workspace
 - [ ] Event subscriptions enabled
 - [ ] Request URL verified: `https://your-ngrok-url.ngrok.io/slack/events`
-- [ ] Bot event `app_mention` subscribed
+- [ ] Bot events `app_mention` and `message.im` subscribed
+- [ ] App Home: Messages tab enabled ("Allow users to send messages")
 
 ### Local Development Setup
 
@@ -268,18 +313,20 @@ Before going live, verify:
 - [ ] ngrok tunnel running: `ngrok http 8000 --log stdout`
 - [ ] `.env` file has correct tokens
 - [ ] Bot responds to mentions: `@RAGDemoBot hello`
+- [ ] Bot responds to direct messages
 - [ ] Logs show successful responses
 
 ### Code-Config Alignment
 
-- [ ] Code has `@slack_app.event("app_mention")` ← matches subscription
+- [ ] Code has `@slack_app.event("app_mention")` ← matches app_mention subscription
+- [ ] Code has `@slack_app.event("message")` ← matches message.im subscription
 - [ ] Code has `/slack/events` endpoint ← matches Request URL
 - [ ] Code uses `say()` function ← requires `chat:write` scope
-- [ ] Code reads `event["user"]` ← requires `app_mentions:read` scope
+- [ ] Code reads `event["user"]` ← requires `app_mentions:read` and `im:history` scopes
 
 ---
 
-## 🚀 Part 10: Next Steps
+## 🚀 Part 11: Next Steps
 
 Once your bot is working:
 

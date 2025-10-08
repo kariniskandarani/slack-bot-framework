@@ -1,6 +1,6 @@
 # RAGDemoBot 🤖
 
-A Slack bot built with FastAPI and Slack Bolt framework that responds to mentions with friendly greetings.
+A Slack bot built with FastAPI and Slack Bolt framework that responds to mentions and direct messages with friendly greetings.
 
 ## 📋 Project Overview
 
@@ -11,7 +11,7 @@ RAGDemoBot is a simple yet powerful Slack bot that demonstrates the integration 
 - **ngrok** - Secure tunneling for local development
 - **Python** - Core programming language
 
-The bot listens for mentions in Slack channels and responds with personalized greetings, making it perfect for learning Slack bot development or as a foundation for more complex bots.
+The bot listens for mentions in Slack channels and responds with personalized greetings. It also supports direct messaging, making it perfect for learning Slack bot development or as a foundation for more complex bots.
 
 ## 🏗️ Project Structure
 
@@ -74,7 +74,7 @@ signing_secret=your-signing-secret-here
 1. Go to **Event Subscriptions** in your Slack app settings
 2. **Enable Events**: Turn on
 3. **Request URL**: `https://your-ngrok-url.ngrok.io/slack/events`
-4. **Subscribe to bot events**: Add `app_mention`
+4. **Subscribe to bot events**: Add `app_mention` and `message.im`
 
 #### OAuth Scopes
 
@@ -82,6 +82,14 @@ Required scopes in **OAuth & Permissions**:
 
 - `app_mentions:read` - Read mentions
 - `chat:write` - Send messages
+- `im:history` - Read direct message history
+- `im:read` - View direct message information
+
+#### App Home
+
+Enable direct messaging in **App Home**:
+
+- Check "Allow users to send Slash commands and messages from the messages tab"
 
 ## 🚀 Usage
 
@@ -92,9 +100,6 @@ Required scopes in **OAuth & Permissions**:
 ```bash
 # Using uvicorn directly
 uvicorn app:app --reload --port 8000
-
-# Or using Python virtual environment
-C:/Users/user/Desktop/SlackDemoBOT/venv/Scripts/python.exe -m uvicorn app:app --reload --port 8000
 ```
 
 #### Step 2: Expose Local Server with ngrok
@@ -121,6 +126,8 @@ Copy the ngrok URL and update your Slack app's Event Subscriptions:
 1. **Invite the bot** to a Slack channel
 2. **Mention the bot**: `@RAGDemoBot hello there!`
 3. **Expected response**: `Hi @yourname! How can I help you?`
+4. **Send a direct message**: Open a DM with the bot and type `Hello!`
+5. **Expected DM response**: `Hi @yourname, you sent me a DM: "Hello!"`
 
 ## 🔧 Code Structure Explanation
 
@@ -150,6 +157,14 @@ def handle_app_mention(event, say, logger):
     # Responds when someone mentions the bot
     user = event["user"]
     say(f"Hi <@{user}>! How can I help you?")
+
+@slack_app.event("message")
+def handle_direct_message(event, say, logger):
+    # Responds to direct messages
+    if event.get("channel_type") == "im" and "user" in event:
+        user = event["user"]
+        text = event.get("text", "")
+        say(f"Hi <@{user}>, you sent me a DM: \"{text}\"")
 ```
 
 #### 3. HTTP Endpoint
@@ -164,8 +179,8 @@ async def slack_events(request: Request):
 ### Data Flow
 
 ```bash
-👤 User mentions bot → 📨 Slack sends event → 🌐 ngrok forwards to localhost:8000
-                                            ↓
+👤 User mentions bot OR sends DM → 📨 Slack sends event → 🌐 ngrok forwards to localhost:8000
+                                                        ↓
 🚪 /slack/events endpoint → 🔧 handler.handle() → 🎯 Event listener triggered
                                                   ↓
 🤖 Bot processes → 📤 Response sent → 📱 User sees reply in Slack
@@ -193,6 +208,7 @@ Example log entries:
 ```bash
 2025-09-27 23:43:11,807 - app - INFO - Slack app initialized successfully
 2025-09-27 23:43:15,234 - app - INFO - Responded to app mention from user U12345
+2025-10-09 00:15:30,456 - app - INFO - Received DM from user U12345: Hello bot!
 ```
 
 ## 🔍 Troubleshooting
@@ -222,8 +238,16 @@ python check_env.py
 #### 4. **Bot doesn't respond**
 
 - Check bot is installed in the workspace
-- Verify `app_mention` event is subscribed
+- Verify `app_mention` and `message.im` events are subscribed
+- For direct messages: Ensure "Messages Tab" is enabled in App Home
 - Check logs in `slack_bot.log`
+
+#### 5. **Direct messages don't work**
+
+- Enable "Allow users to send messages from the messages tab" in App Home
+- Add `im:history` and `im:read` OAuth scopes
+- Subscribe to `message.im` event
+- Reinstall bot after making changes
 
 ## 🔐 Security Notes
 

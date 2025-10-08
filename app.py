@@ -46,6 +46,15 @@ def handle_app_mention(event, say, logger):
         logger.error(f"Error in app mention: {e}")
         say("Sorry, something went wrong. Please try again.")
 
+@slack_app.event("message")
+def handle_direct_message(event, say, logger):
+    # Only respond to direct messages (IMs)
+    if event.get("channel_type") == "im" and "user" in event:
+        user = event["user"]
+        text = event.get("text", "")
+        logger.info(f"Received DM from user {user}: {text}")
+        say(f"Hi <@{user}>, you sent me a DM: \"{text}\"")
+
 @app.post("/slack/events")
 async def slack_events(request: Request):
     """Handle Slack events."""
